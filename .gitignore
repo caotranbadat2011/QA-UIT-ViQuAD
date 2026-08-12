@@ -1,0 +1,6 @@
+models/best_checkpoint/checkpoint-1516/
+models/best_checkpoint/checkpoint-3032/
+models/best_checkpoint/checkpoint-4548/
+*.pt
+*.pth
+.ipynb_checkpoints/
