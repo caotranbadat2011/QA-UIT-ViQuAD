@@ -1,7 +1,7 @@
 """
 Evaluate a fine-tuned QA model on ViQuAD test set with SQuAD-style metrics: Exact Match (EM), F1.
 Usage:
-    python evaluate.py --model_dir models/best_checkpoint --test_file data/processed/test.parquet
+    python evaluate.py --model_dir models/phobert_qa --test_file data/processed/test.parquet
 """
 import argparse
 import collections
@@ -85,29 +85,82 @@ def compute_f1(gold, pred):
     return 2 * precision * recall / (precision + recall)
 
 
+def _tokenize_with_offsets(tokenizer, text):
+    tokens = tokenizer.tokenize(text)
+    offsets = []
+    pos = 0
+    for tok in tokens:
+        clean = tok.replace("@@", "")
+        if clean == "":
+            offsets.append((0, 0))
+            continue
+        start = text.find(clean, pos)
+        if start == -1:
+            start = pos
+        end = start + len(clean)
+        offsets.append((start, end))
+        pos = end
+    return tokens, offsets
+
+
 def prepare_eval_features(examples, tokenizer, max_length, doc_stride):
-    tokenized = tokenizer(
-        examples["question"],
-        examples["context"],
-        truncation="only_second",
-        max_length=max_length,
-        stride=doc_stride,
-        return_overflowing_tokens=True,
-        return_offsets_mapping=True,
-        padding="max_length",
-    )
-    sample_map = tokenized.pop("overflow_to_sample_mapping")
-    example_ids = []
-    for i in range(len(tokenized["input_ids"])):
-        sample_idx = sample_map[i]
-        example_ids.append(examples["id"][sample_idx])
-        sequence_ids = tokenized.sequence_ids(i)
-        tokenized["offset_mapping"][i] = [
-            o if sequence_ids[k] == 1 else None
-            for k, o in enumerate(tokenized["offset_mapping"][i])
-        ]
-    tokenized["example_id"] = example_ids
-    return tokenized
+    cls_id = tokenizer.cls_token_id
+    sep_id = tokenizer.sep_token_id
+    pad_id = tokenizer.pad_token_id
+
+    input_ids_list, attention_list, offset_list, example_id_list = [], [], [], []
+
+    for i in range(len(examples["question"])):
+        question = examples["question"][i]
+        context = examples["context"][i]
+        ex_id = examples["id"][i]
+
+        q_ids = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(question))
+        ctx_tokens, ctx_offsets = _tokenize_with_offsets(tokenizer, context)
+        ctx_ids = tokenizer.convert_tokens_to_ids(ctx_tokens)
+
+        # Layout: [CLS] q [SEP] [SEP] ctx [SEP]  -> 4 special tokens
+        max_ctx_len = max_length - len(q_ids) - 4
+        if max_ctx_len < 1:
+            q_ids = q_ids[: max(1, max_length - 5)]
+            max_ctx_len = max_length - len(q_ids) - 4
+
+        spans = []
+        start = 0
+        while start < len(ctx_ids):
+            length = min(max_ctx_len, len(ctx_ids) - start)
+            spans.append((start, length))
+            if start + length == len(ctx_ids):
+                break
+            start += min(length, doc_stride)
+
+        for (s, l) in spans:
+            ctx_slice = ctx_ids[s:s + l]
+            ctx_off_slice = ctx_offsets[s:s + l]
+
+            input_ids = [cls_id] + q_ids + [sep_id, sep_id] + ctx_slice + [sep_id]
+            attention_mask = [1] * len(input_ids)
+
+            pad_len = max_length - len(input_ids)
+            input_ids += [pad_id] * pad_len
+            attention_mask += [0] * pad_len
+
+            offset_mapping = [None] * (len(q_ids) + 3)
+            offset_mapping += [list(o) for o in ctx_off_slice]
+            offset_mapping += [None]
+            offset_mapping += [None] * pad_len
+
+            input_ids_list.append(input_ids)
+            attention_list.append(attention_mask)
+            offset_list.append(offset_mapping)
+            example_id_list.append(ex_id)
+
+    return {
+        "input_ids": input_ids_list,
+        "attention_mask": attention_list,
+        "offset_mapping": offset_list,
+        "example_id": example_id_list,
+    }
 
 
 def postprocess(examples, features, raw_predictions, n_best=20, max_answer_length=64):
@@ -159,10 +212,10 @@ def postprocess(examples, features, raw_predictions, n_best=20, max_answer_lengt
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_dir", default="models/best_checkpoint")
+    parser.add_argument("--model_dir", default="models/phobert_qa")
     parser.add_argument("--test_file", default="data/processed/test.parquet")
-    parser.add_argument("--max_length", type=int, default=384)
-    parser.add_argument("--doc_stride", type=int, default=128)
+    parser.add_argument("--max_length", type=int, default=256)
+    parser.add_argument("--doc_stride", type=int, default=64)
     args = parser.parse_args()
 
     print(f"Loading Tokenizer & Model from {args.model_dir}...")

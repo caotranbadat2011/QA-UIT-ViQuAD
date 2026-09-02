@@ -1,6 +1,95 @@
-models/best_checkpoint/checkpoint-1516/
-models/best_checkpoint/checkpoint-3032/
-models/best_checkpoint/checkpoint-4548/
-*.pt
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Hugging Face
+*.bin
+*.ckpt
 *.pth
-.ipynb_checkpoints/
+*.pt
+hub/
+.hub/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Data (uncomment if dataset is too large)
+# data/raw/*.json
+# data/processed/*.parquet
+
+# Model checkpoints (keep only best model, remove intermediate checkpoints)
+models/*/checkpoint-*/
+
+# Trong so model: 537MB weights cua PhoBERT khong day len GitHub.
+# Nguoi dung tai ve tu Google Drive/ZIP kem bao cao roi dat vao duong dan nay.
+models/phobert_qa/
+
+# Pool 40 ung vien moi cau (428MB) — sinh ra boi dump_candidates.py, chi can
+# tai tao khi train lai reranker.
+data/candidates/
+
+# Logs
+*.log
+train_log.txt
+train_err.txt
+
+# Temporary files
+*.tmp
+temp/
+tmp/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Distribution / packaging
+*.zip
+*.tar.gz
+*.rar
+
+# Predictions and outputs
+predictions.json

@@ -1,0 +1,34 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1788347221.889173    2640 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1788347227.768232    2640 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+device=cuda
+train: 22702 examples
+  inference 16/35310 windows
+  inference 1616/35310 windows
+  inference 3216/35310 windows
+  inference 4816/35310 windows
+  inference 6416/35310 windows
+  inference 8016/35310 windows
+  inference 9616/35310 windows
+  inference 11216/35310 windows
+  inference 12816/35310 windows
+  inference 14416/35310 windows
+  inference 16016/35310 windows
+  inference 17616/35310 windows
+  inference 19216/35310 windows
+  inference 20816/35310 windows
+  inference 22416/35310 windows
+  inference 24016/35310 windows
+  inference 25616/35310 windows
+  inference 27216/35310 windows
+  inference 28816/35310 windows
+  inference 30416/35310 windows
+  inference 32016/35310 windows
+  inference 33616/35310 windows
+  inference 35216/35310 windows
+
+Saved data/candidates\train.jsonl
+recall@40 (dap an co trong pool): 98.09%
+extractor pick  -> HasAns EM 68.40%  NoAns acc 0.00%
+Nho: extractor_pick day chua ap dung nguong null cua evaluate.py, chi la span diem cao nhat.

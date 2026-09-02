@@ -13,6 +13,7 @@ from transformers import (
     default_data_collator,
 )
 
+
 class QADataLoader:
     """Lớp chịu trách nhiệm đọc và chuẩn hóa định dạng dữ liệu (JSON / Parquet)"""
     @staticmethod
@@ -56,67 +57,123 @@ class QADataLoader:
 
 
 class QATokenizerProcessor:
-    """Lớp đóng gói logic Tokenization và căn chỉnh offset (Mapping offsets)"""
-    def __init__(self, tokenizer, max_length: int = 384, doc_stride: int = 128):
+    """Lớp đóng gói logic Tokenization và căn chỉnh offset (Mapping offsets).
+
+    PhoBERT dùng tokenizer Python chậm (không hỗ trợ return_offsets_mapping),
+    nên offset được tính thủ công từ output của tokenizer.
+    """
+    def __init__(self, tokenizer, max_length: int = 256, doc_stride: int = 64):
         self.tokenizer = tokenizer
         self.max_length = max_length
         self.doc_stride = doc_stride
 
-    def prepare_features(self, examples):
-        tokenized = self.tokenizer(
-            examples["question"],
-            examples["context"],
-            truncation="only_second",
-            max_length=self.max_length,
-            stride=self.doc_stride,
-            return_overflowing_tokens=True,
-            return_offsets_mapping=True,
-            padding="max_length",
-        )
-        sample_map = tokenized.pop("overflow_to_sample_mapping")
-        offset_mapping = tokenized.pop("offset_mapping")
-
-        start_positions, end_positions = [], []
-        for i, offsets in enumerate(offset_mapping):
-            input_ids = tokenized["input_ids"][i]
-            cls_index = input_ids.index(self.tokenizer.cls_token_id) if self.tokenizer.cls_token_id in input_ids else 0
-            sample_idx = sample_map[i]
-            answers = examples["answers"][sample_idx]
-
-            if len(answers["answer_start"]) == 0:
-                start_positions.append(cls_index)
-                end_positions.append(cls_index)
+    def _tokenize_with_offsets(self, text):
+        tokens = self.tokenizer.tokenize(text)
+        offsets = []
+        pos = 0
+        for tok in tokens:
+            clean = tok.replace("@@", "")
+            if clean == "":
+                offsets.append((0, 0))
                 continue
+            start = text.find(clean, pos)
+            if start == -1:
+                start = pos
+            end = start + len(clean)
+            offsets.append((start, end))
+            pos = end
+        return tokens, offsets
 
-            start_char = answers["answer_start"][0]
-            end_char = start_char + len(answers["text"][0])
-            sequence_ids = tokenized.sequence_ids(i)
+    def prepare_features(self, examples):
+        tokenizer = self.tokenizer
+        max_length = self.max_length
+        doc_stride = self.doc_stride
+        cls_id = tokenizer.cls_token_id
+        sep_id = tokenizer.sep_token_id
+        pad_id = tokenizer.pad_token_id
 
-            idx = 0
-            while idx < len(sequence_ids) and sequence_ids[idx] != 1:
-                idx += 1
-            context_start = idx
-            while idx < len(sequence_ids) and sequence_ids[idx] == 1:
-                idx += 1
-            context_end = idx - 1
+        input_ids_list, attention_list = [], []
+        start_positions, end_positions = [], []
 
-            if not (offsets[context_start][0] <= start_char and offsets[context_end][1] >= end_char):
-                start_positions.append(cls_index)
-                end_positions.append(cls_index)
-            else:
-                idx = context_start
-                while idx <= context_end and offsets[idx][0] <= start_char:
-                    idx += 1
-                start_positions.append(idx - 1)
+        for i in range(len(examples["question"])):
+            question = examples["question"][i]
+            context = examples["context"][i]
+            answers = examples["answers"][i]
 
-                idx = context_end
-                while idx >= context_start and offsets[idx][1] >= end_char:
-                    idx -= 1
-                end_positions.append(idx + 1)
+            q_ids = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(question))
+            ctx_tokens, ctx_offsets = self._tokenize_with_offsets(context)
+            ctx_ids = tokenizer.convert_tokens_to_ids(ctx_tokens)
 
-        tokenized["start_positions"] = start_positions
-        tokenized["end_positions"] = end_positions
-        return tokenized
+            # Layout: [CLS] q [SEP] [SEP] ctx [SEP]  -> 4 special tokens
+            max_ctx_len = max_length - len(q_ids) - 4
+            if max_ctx_len < 1:
+                q_ids = q_ids[: max(1, max_length - 5)]
+                max_ctx_len = max_length - len(q_ids) - 4
+
+            # Sliding windows over the context tokens
+            spans = []
+            start = 0
+            while start < len(ctx_ids):
+                length = min(max_ctx_len, len(ctx_ids) - start)
+                spans.append((start, length))
+                if start + length == len(ctx_ids):
+                    break
+                start += min(length, doc_stride)
+
+            answer_start = answers["answer_start"][0] if len(answers["answer_start"]) > 0 else None
+
+            for (s, l) in spans:
+                ctx_slice = ctx_ids[s:s + l]
+                ctx_off_slice = ctx_offsets[s:s + l]
+
+                input_ids = [cls_id] + q_ids + [sep_id, sep_id] + ctx_slice + [sep_id]
+                attention_mask = [1] * len(input_ids)
+
+                # padding
+                pad_len = max_length - len(input_ids)
+                input_ids += [pad_id] * pad_len
+                attention_mask += [0] * pad_len
+
+                # offset_mapping: None for special tokens, char offsets for context tokens
+                offset_mapping = [(0, 0)] * (len(q_ids) + 3)
+                offset_mapping += [o for o in ctx_off_slice]
+                offset_mapping += [(0, 0)]
+                offset_mapping += [(0, 0)] * pad_len
+
+                # Determine answer span token positions (if answer is fully inside this window)
+                cls_index = 0
+                if answer_start is None:
+                    start_pos, end_pos = cls_index, cls_index
+                else:
+                    end_char = answer_start + len(answers["text"][0])
+                    context_start = len(q_ids) + 3
+                    context_end = context_start + l - 1
+                    if l == 0 or not (
+                        ctx_off_slice[0][0] <= answer_start and ctx_off_slice[-1][1] >= end_char
+                    ):
+                        start_pos, end_pos = cls_index, cls_index
+                    else:
+                        idx = context_start
+                        while idx <= context_end and offset_mapping[idx][0] <= answer_start:
+                            idx += 1
+                        start_pos = idx - 1
+
+                        idx = context_end
+                        while idx >= context_start and offset_mapping[idx][1] >= end_char:
+                            idx -= 1
+                        end_pos = idx + 1
+
+                input_ids_list.append(input_ids)
+                attention_list.append(attention_mask)
+                start_positions.append(start_pos)
+                end_positions.append(end_pos)
+
+        return {
+            "input_ids": input_ids_list,
+            "attention_mask": attention_list,
+            "start_positions": start_positions,
+            "end_positions": end_positions,
+        }
 
 
 class QATrainerPipeline:
@@ -162,7 +219,14 @@ class QATrainerPipeline:
             metric_for_best_model="loss",
             greater_is_better=False,
             fp16=True,
+            gradient_accumulation_steps=self.args.gradient_accumulation_steps,
+            gradient_checkpointing=self.args.gradient_checkpointing,
+            warmup_ratio=self.args.warmup_ratio,
+            seed=self.args.seed,
+            save_total_limit=self.args.save_total_limit,
+            report_to="none",
             logging_steps=50,
+            max_steps=self.args.max_steps,
         )
 
         trainer = Trainer(
@@ -171,7 +235,7 @@ class QATrainerPipeline:
             train_dataset=train_features,
             eval_dataset=val_features,
             data_collator=default_data_collator,
-            tokenizer=self.tokenizer,
+            processing_class=self.tokenizer,
         )
 
         print("Starting Training Process...")
@@ -187,13 +251,19 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Extractive QA Fine-tuning Pipeline")
     parser.add_argument("--train_file", default="data/processed/train.parquet")
     parser.add_argument("--val_file", default="data/processed/val.parquet")
-    parser.add_argument("--model_name", default="bkai-foundation-models/vietnamese-bi-encoder")
+    parser.add_argument("--model_name", default="vinai/phobert-base")
     parser.add_argument("--output_dir", default="./models/best_checkpoint")
-    parser.add_argument("--max_length", type=int, default=384)
-    parser.add_argument("--doc_stride", type=int, default=128)
+    parser.add_argument("--max_length", type=int, default=256)
+    parser.add_argument("--doc_stride", type=int, default=64)
     parser.add_argument("--num_train_epochs", type=int, default=3)
-    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--learning_rate", type=float, default=3e-5)
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=2)
+    parser.add_argument("--gradient_checkpointing", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--warmup_ratio", type=float, default=0.06)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--save_total_limit", type=int, default=2)
+    parser.add_argument("--max_steps", type=int, default=-1)
     return parser.parse_args()
 
 
