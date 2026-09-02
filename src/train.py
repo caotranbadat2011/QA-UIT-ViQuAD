@@ -187,7 +187,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Extractive QA Fine-tuning Pipeline")
     parser.add_argument("--train_file", default="data/processed/train.parquet")
     parser.add_argument("--val_file", default="data/processed/val.parquet")
-    parser.add_argument("--model_name", default="bkai-foundation-models/vietnamese-bi-encoder")
+    parser.add_argument("--model_name", default="xlm-roberta-base")
     parser.add_argument("--output_dir", default="./models/best_checkpoint")
     parser.add_argument("--max_length", type=int, default=384)
     parser.add_argument("--doc_stride", type=int, default=128)

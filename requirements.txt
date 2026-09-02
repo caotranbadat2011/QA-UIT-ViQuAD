@@ -1,0 +1,15 @@
+# Core Machine Learning & Deep Learning
+torch>=2.0.0
+transformers>=4.30.0
+datasets>=2.12.0
+accelerate>=0.20.0
+
+# Data Processing & Analysis
+pandas>=2.0.0
+pyarrow>=12.0.0
+numpy>=1.24.0
+scikit-learn>=1.2.0
+pyyaml>=6.0
+
+# Web Application
+streamlit>=1.25.0

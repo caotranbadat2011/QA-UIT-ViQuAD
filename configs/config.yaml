@@ -1,0 +1,42 @@
+data:
+  raw_path: "data/raw/train_formatted.json"
+  processed_dir: "data/processed"
+  train_file: "data/processed/train.parquet"
+  val_file: "data/processed/val.parquet"
+  test_file: "data/processed/test.parquet"
+  split_ratios:
+    train: 0.8
+    val: 0.1
+    test: 0.1
+  seed: 42
+
+model:
+  name: "xlm-roberta-base"
+  output_dir: "models/best_checkpoint"
+  max_length: 384
+  doc_stride: 128
+  search_window: 20
+
+training:
+  num_train_epochs: 3
+  batch_size: 16
+  learning_rate: 3.0e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  eval_strategy: "epoch"
+  save_strategy: "epoch"
+  logging_steps: 50
+  fp16: true
+  load_best_model_at_end: true
+  metric_for_best_model: "loss"
+  greater_is_better: false
+
+evaluation:
+  n_best: 20
+  max_answer_length: 64
+  predictions_file: "predictions.json"
+
+app:
+  no_answer_threshold: 0.0
+  page_title: "Vietnamese QA Demo"
+  page_icon: "🔎"
