@@ -17,7 +17,7 @@ Project đã được nâng cấp từ basic fine-tuning thành **research-level
 
 **Components:**
 - `MultiTaskPhoBERT` class - Main model wrapper
-  - Shared encoder: PhoBERT base (135M parameters)
+  - Shared encoder: PhoBERT base (134.4M parameters)
   - QA Head: Linear(768→2) for start/end logits
   - Answerability Head: MLP(768→256→2) for binary classification
   - Type Head: MLP(768→128→5) for answer type classification
@@ -203,65 +203,42 @@ trainer.save_model("models/advanced_checkpoint")
 
 ---
 
-## 📊 Expected Improvements
+## 📊 Kết quả thực tế — và những gì chưa train
+
+> ⚠️ **Chưa train.** Toàn bộ kỹ thuật trong tài liệu này (multi-task head, adversarial
+> training, curriculum) có code nhưng **không được chạy**, nên không có số cải thiện nào cả.
+> Cột Baseline dưới đây là số **đo thật** của model một tầng trên toàn bộ test set (n = 2882);
+> mọi con số "dự kiến" đã bị xóa khỏi tài liệu.
 
 ### Quantitative:
-| Metric | Baseline | With Advanced Techniques | Improvement |
-|--------|----------|-------------------------|-------------|
-| EM Score | ~65% | ~68-70% | +3-5% |
-| F1 Score | ~72% | ~75-77% | +3-5% |
-| NoAns Accuracy | ~60% | ~68-73% | +8-13% |
-| Robustness | - | +3-5% on noisy test | Significant |
+| Metric | Baseline (đo thật) | With Advanced Techniques |
+|--------|--------------------|--------------------------|
+| EM Score | 42.40 | chưa train |
+| F1 Score | 57.90 | chưa train |
+| NoAns Accuracy | 31.78 | chưa train |
+| Robustness (nhiễu) | chưa đo | chưa train |
 
-### Qualitative:
-✅ Better handling of unanswerable questions  
-✅ More robust to input variations  
-✅ Faster convergence in early training  
-✅ Improved generalization to unseen data  
-✅ Research-level methodology  
+Thứ duy nhất đã đo ở tầng thứ hai là reranker đặc trưng bề mặt: độ chính xác câu bẫy
+34.85 → **56.06** nhưng HasAns F1 **−7.12** (mẫu 200 câu test, τ = 0.95), và nó chỉ sửa được
+12/821 câu xếp hạng sai. Kết luận rút ra: lỗi nằm ở kiến trúc pointer (start/end chấm độc lập
+rồi cộng lại), nên hướng đáng thử là **đổi kiến trúc đầu ra** chứ không phải thêm loss phụ.
+
+### Qualitative (dự kiến, chưa kiểm chứng):
+- Handling of unanswerable questions tốt hơn nếu head `answerable_logits` được train
+- Hội tụ nhanh hơn ở early training khi có curriculum
 
 ---
 
 ## 🧪 Testing Each Module
 
-### Test Multi-Task Model:
 ```bash
-python src/multitask_model.py
-```
-Expected output:
-```
-Testing MultiTaskPhoBERT...
-Model Architecture:
-  Total parameters: 137,XXX,XXX
-  Encoder parameters: 135,XXX,XXX
-  Head parameters: X,XXX,XXX
-
-Forward pass outputs:
-  start_logits: torch.Size([2, 10])
-  end_logits: torch.Size([2, 10])
-  answerable_logits: torch.Size([2, 2])
-  type_logits: torch.Size([2, 5])
-  length_pred: torch.Size([2])
-
-Loss computation:
-  total_loss: X.XXXX
-  qa_loss: X.XXXX
-  ...
-
-✅ MultiTaskPhoBERT test passed!
+python src/multitask_model.py   # in số tham số encoder/head + shape 5 đầu ra
+python src/adversarial.py       # in ví dụ text gốc và text đã gây nhiễu
+python src/curriculum.py        # in phân bố độ khó và lịch train
 ```
 
-### Test Adversarial Perturbation:
-```bash
-python src/adversarial.py
-```
-Expected: Shows original and perturbed text examples
-
-### Test Curriculum Scheduler:
-```bash
-python src/curriculum.py
-```
-Expected: Prints dataset difficulty distribution and training schedule
+Cả ba lệnh trên **chưa được chạy trong project này** (các module chỉ ở dạng code, không
+được train), nên tài liệu **không có output mẫu**. Muốn kiểm chứng, chạy từng lệnh ở trên.
 
 ---
 

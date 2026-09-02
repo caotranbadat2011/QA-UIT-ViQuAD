@@ -9,12 +9,24 @@
 - **Status:** Đã train xong, có checkpoints và final model
 
 ### 2. Evaluation ✓
-- **Script:** `src/evaluate.py`
+- **Script:** `src/evaluate.py` (toàn test set) và `src/batch_eval.py` (so một tầng / hai tầng)
 - **Metrics:** Exact Match (EM), F1 Score
 - **Output:** `predictions.json`
-- **Features:** 
+- **Kết quả đo thật trên toàn bộ test set (n = 2882, 944 câu bẫy):**
+
+| Chỉ số | Một tầng |
+|---|---|
+| EM toàn bộ | 42.40 |
+| F1 toàn bộ | 57.90 |
+| HasAns EM / F1 | 47.57 / 70.62 |
+| NoAns Accuracy | 31.78 |
+| F1 khi model chịu trả lời | 79.16 |
+
+- **Sau khi thêm tầng reranker (τ = 0.95, mẫu 200 câu test):** EM 41.50 → **46.00**,
+  độ chính xác câu bẫy 34.85 → **56.06**, cái giá là F1 câu có đáp án −7.12.
+- **Features:**
   - SQuAD-style evaluation
-  - Unanswerable question detection
+  - Unanswerable question detection có ngưỡng hiệu chuẩn
   - Sliding window post-processing
 
 ### 3. Web Application ✓
@@ -56,7 +68,7 @@ train_Vit/
 ├── 🧠 MODEL
 │   └── models/phobert_qa/            # Trained PhoBERT QA model
 │       ├── config.json
-│       ├── model.safetensors         # Model weights (~540MB)
+│       ├── model.safetensors         # Model weights (537MB, KHÔNG đẩy lên git)
 │       ├── tokenizer_config.json
 │       ├── special_tokens_map.json
 │       ├── vocab.txt
@@ -126,11 +138,11 @@ Mở trình duyệt: `http://localhost:8501`
 
 ### Model Architecture
 - **Base:** PhoBERT-base (RoBERTa variant for Vietnamese)
-- **Parameters:** ~135 million
+- **Parameters:** 134,409,218 (~134.4M)
 - **Hidden size:** 768
 - **Attention heads:** 12
 - **Layers:** 12
-- **Vocabulary:** 64,001 tokens
+- **Vocabulary:** 64,001 (`vocab_size`; tokenizer thực tế 64,000 token)
 
 ### Training Hyperparameters
 ```yaml
@@ -186,11 +198,11 @@ gradient_checkpointing: true
 3. **Sliding Window:** Xử lý context dài hiệu quả
 4. **Unanswerable Detection:** Phát hiện câu hỏi không có đáp án
 5. **FP16 Training:** Tối ưu memory và tốc độ
-6. **Gradient Checkpointing:** Tiết kiệm ~50% memory
+6. **Gradient Checkpointing:** Đổi tốc độ lấy memory (train được trên GPU 4GB)
 
 ### Application Highlights
 1. **User-friendly UI:** Giao diện đẹp, dễ sử dụng
-2. **Real-time Inference:** Trả lời ngay lập tức
+2. **Real-time Inference:** ~40–90 ms với context ngắn, 190–915 ms trên test set (RTX 3050 Laptop 4GB)
 3. **Visual Feedback:** Highlight câu trả lời trong context
 4. **Confidence Scores:** Hiển thị độ tin cậy của prediction
 5. **Sample Data:** Có dữ liệu mẫu để test nhanh

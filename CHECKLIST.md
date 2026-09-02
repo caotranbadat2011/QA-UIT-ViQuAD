@@ -65,35 +65,36 @@ rm -rf models/phobert_qa/checkpoint-*
 ```bash
 python test_model.py
 ```
-- [ ] Passes all 3 tests (Imports, Model Loading, Inference)
+- [x] Passes all 3 tests (Imports, Model Loading, Inference) — đã chạy: cả 3 PASS,
+      `Model loaded (parameters: 134,409,218)`
 
 ### Test 2: Web App
 ```bash
 streamlit run app/app.py
 ```
-- [ ] App starts without errors
-- [ ] Model loads successfully (< 30 seconds)
-- [ ] Can answer sample questions
+- [x] App starts without errors (kiểm chứng qua `streamlit.testing` AppTest)
+- [x] Model loads successfully — đo được 17–21 s cho weights 537MB + reranker
+- [x] Can answer sample questions (xem Test 3 bên dưới)
 - [ ] UI displays correctly
 
 ### Test 3: Sample Questions
 Test với ít nhất 3 câu hỏi:
 
-**Question 1:**
+**Question 1:** ✓ đã kiểm chứng
 ```
 Context: "PhoBERT là mô hình ngôn ngữ tiền huấn luyện cho tiếng Việt, được phát triển bởi VinAI."
 Question: "Ai đã phát triển PhoBERT?"
-Expected: "VinAI"
+Kết quả thật: "VinAI" (độ tin 0.979)
 ```
-- [ ] Trả lời đúng
+- [x] Trả lời đúng
 
-**Question 2:**
+**Question 2:** ✓ đã kiểm chứng
 ```
 Context: "Hà Nội là thủ đô của Việt Nam."
 Question: "TP.HCM nằm ở đâu?"
-Expected: No answer / Không thể trả lời
+Kết quả thật: từ chối trả lời (p_null = 0.997 ≥ τ = 0.95)
 ```
-- [ ] Phát hiện đúng là không có đáp án
+- [x] Phát hiện đúng là không có đáp án
 
 **Question 3:** (Tự chọn)
 ```
@@ -124,13 +125,16 @@ streamlit run app/app.py
 python src/evaluate.py --model_dir models/phobert_qa --test_file data/processed/test.parquet
 ```
 
-- [ ] Có file `predictions.json`
-- [ ] Ghi lại metrics trong báo cáo:
-  - EM Score: _______%
-  - F1 Score: _______%
-  - HasAns EM: _______%
-  - HasAns F1: _______%
-  - NoAns Accuracy: _______%
+- [ ] Có file `predictions.json` — **không có trong repo** (đã ignore vì dung lượng);
+      chạy lại `src/evaluate.py` để sinh trước khi đóng gói nộp bài
+- [x] Ghi lại metrics trong báo cáo — **toàn bộ test set, model một tầng:**
+  - EM Score: 42.40%
+  - F1 Score: 57.90%
+  - HasAns EM: 47.57%
+  - HasAns F1: 70.62%
+  - NoAns Accuracy: 31.78%
+- [x] Metrics hai tầng (mẫu 200 câu test, τ = 0.95): EM 46.00 · F1 58.92 · câu bẫy 56.06
+      — nguồn `batch_eval_n200.json`
 
 ---
 

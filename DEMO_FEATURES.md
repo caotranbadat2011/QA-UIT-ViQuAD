@@ -1,5 +1,11 @@
 # 🌟 Advanced Features Showcase
 
+> ⚠️ **Trạng thái thực tế:** `app/app.py` hiện chỉ có **2 tab** — "📝 Hỏi đáp trên đoạn văn
+> của bạn" và "🧪 Đánh giá hàng loạt trên test set". Ba tính năng được "showcase" phần lớn
+> trong file này (Attention Visualization, Analytics tab, Multi-Turn Conversation) **đã bị
+> bỏ**, nên đừng demo theo tài liệu này. Điểm khác biệt thật của bản nộp là reranker hai tầng
+> + ngưỡng từ chối; số đo thật nằm trong `README.md` (mục Results).
+
 Đây là tài liệu giới thiệu các tính năng **độc đáo** và **khác biệt** của project so với các implementations thông thường.
 
 ---
@@ -61,14 +67,15 @@ python src/metrics_advanced.py \
 # - Bad cases gallery với examples
 ```
 
-**Output example:**
+**Output thật** (2882 câu test, tính lại được bằng `python src/metrics_advanced.py`):
 ```
 Error Categories:
-- correct: 1,234 samples (65%)
-- completely_wrong: 345 samples (18%)
-- partial_overlap: 178 samples (9%)
-- too_long: 89 samples (5%)
-- ...
+- correct (EM):                    922 samples (32.0%)
+- bỏ đúng câu bẫy (NoAns correct): 300 samples (10.4%)
+- đúng chỗ, cắt sai biên:          608 samples (21.1%)  [375 dài thừa + 233 dài thiếu]
+- bịa đáp án cho câu bẫy:          644 samples (22.3%)
+- từ chối oan câu có đáp án:       209 samples ( 7.3%)
+- sai span khác / sai hoàn toàn:   199 samples ( 6.9%)
 ```
 
 **Tại sao ấn tượng:**

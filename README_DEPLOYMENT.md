@@ -100,10 +100,12 @@ Hà Nội là thủ đô của Việt Nam, nằm bên bờ sông Hồng. Thành 
 Hà Nội nằm ở đâu?
 ```
 
-**Expected Output:**
+**Kết quả thật** (chạy `python src/qa_service.py` qua Tab 1, đã kiểm chứng):
 ```
-bên bờ sông Hồng
+nằm bên bờ sông Hồng.
 ```
+Model trả lời kèm chữ "nằm" và dấu chấm — đây chính là dạng "cắt sai biên" được thống kê
+ở mục Results (21.1% test set). Đáp án vàng của ViQuAD cho câu này là "bên bờ sông Hồng".
 
 ---
 
@@ -147,14 +149,22 @@ Kết quả đánh giá sẽ được lưu vào `predictions.json`.
 
 ## 📈 Kết quả Đánh giá
 
-Sau khi train và evaluate, mô hình đạt được các metrics trên tập test:
+Đo thật trên **toàn bộ test set** (n = 2882, 944 câu không có đáp án), model một tầng:
 
-- **Exact Match (EM):** Xem kết quả trong log training
-- **F1 Score:** Xem kết quả trong log training
-- **HasAns EM/F1:** Metrics cho câu hỏi có đáp án
-- **NoAns Accuracy:** Độ chính xác phát hiện câu hỏi không có đáp án
+| Metric | Điểm |
+|--------|------|
+| **Exact Match (EM)** | **42.40** |
+| **F1 Score** | **57.90** |
+| HasAns EM | 47.57 |
+| HasAns F1 | 70.62 |
+| NoAns Accuracy | 31.78 |
+| F1 riêng khi model chịu trả lời | 79.16 |
 
-Chi tiết predictions được lưu trong file `predictions.json`.
+Bật thêm tầng reranker với ngưỡng từ chối τ = 0.95, đo trên mẫu 200 câu test (seed 42):
+EM 41.50 → **46.00**, độ chính xác câu bẫy 34.85 → **56.06**, cái giá là F1 câu có đáp án
+−7.12. Chạy lại: `python src/batch_eval.py --n 200 --out batch_eval_n200.json`.
+
+Chi tiết predictions một tầng được lưu trong file `predictions.json`.
 
 ---
 
@@ -201,7 +211,7 @@ Chi tiết predictions được lưu trong file `predictions.json`.
 - **Hidden size:** 768
 - **Attention heads:** 12
 - **Layers:** 12
-- **Vocabulary size:** 64,001
+- **Vocabulary size:** 64,001 (`config.json`); tokenizer báo 64,000 token
 - **Position embeddings:** Absolute (max 258)
 
 ---

@@ -36,15 +36,15 @@ Mở `REPORT.md` và điền các thông tin sau:
 python src/evaluate.py --model_dir models/phobert_qa --test_file data/processed/test.parquet
 ```
 
-Copy kết quả vào report:
+Kết quả đã đo (toàn bộ test set, n = 2882):
 
 ```markdown
 ### 5.1 Metrics
 
 | Metric | Score |
 |--------|-------|
-| **Exact Match (EM)** | [COPY TỪ OUTPUT]% |
-| **F1 Score** | [COPY TỪ OUTPUT]% |
+| **Exact Match (EM)** | 42.40% |
+| **F1 Score** | 57.90% |
 ```
 
 ### Step 4: Chụp ảnh màn hình Web App
@@ -105,17 +105,20 @@ Xây dựng hệ thống có thể:
 ## 2. Dataset
 
 ### 2.1 Mô tả
-- **Tên dataset:** ViQuAD (Vietnamese Question Answering Dataset)
+- **Tên dataset:** ViQuAD (Vietnamese Question Answering Dataset), bản UIT-ViQuAD 2.0 có câu bẫy
 - **Ngôn ngữ:** Tiếng Việt
 - **Nguồn:** VinAI Research / Cộng đồng NLP tiếng Việt
-- **License:** [Nếu biết]
 
-### 2.2 Thống kê
-| Split | Số lượng samples |
-|-------|------------------|
-| Train | [Xem data/processed/train.parquet] |
-| Validation | [Xem data/processed/val.parquet] |
-| Test | [Xem data/processed/test.parquet] |
+### 2.2 Thống kê (đo từ `data/processed/*.parquet`)
+| Split | Câu hỏi | Đoạn văn | Câu không có đáp án |
+|-------|---------|----------|---------------------|
+| Train | 22702 | 3279 | 7336 (32.3%) |
+| Validation | 2872 | 411 | 937 (32.6%) |
+| Test | 2882 | 411 | 944 (32.8%) |
+
+Độ dài tính theo từ (train): context TB 181 · median 162 · dài nhất 1537; câu hỏi TB 14.6 ·
+dài nhất 53; đáp án TB 9.9 · median 6 · dài nhất 122. Context vượt xa cửa sổ 256 token của
+model nên bắt buộc dùng sliding window.
 
 ### 2.3 Cấu trúc dữ liệu
 Mỗi sample gồm:
@@ -149,22 +152,27 @@ Code tiền xử lý: `src/data_preprocessing.py`
 **PhoBERT-base** (VinAI Research)
 
 **Lý do chọn:**
-1. Pre-trained trên corpus tiếng Việt lớn (20GB+)
+1. Pre-trained trên corpus tiếng Việt lớn (tin tức + Wikipedia của VinAI)
 2. Đạt SOTA trên nhiều benchmarks tiếng Việt
 3. Dựa trên RoBERTa architecture - proven effective for QA
 4. Community support tốt, dễ sử dụng với Hugging Face
 5. Phù hợp với tài nguyên compute available
 
 ### 3.2 Thông số kỹ thuật
+Lấy từ `models/phobert_qa/config.json` và `training_args.bin` (không phải số của bài báo gốc):
+
 | Parameter | Value |
 |-----------|-------|
-| Architecture | RoBERTa-base variant |
-| Hidden size | 768 dimensions |
+| Architecture | RoBERTa-base variant (`RobertaForQuestionAnswering`) |
+| Hidden size | 768 |
 | Attention heads | 12 |
 | Transformer layers | 12 |
-| Vocabulary size | 64,001 tokens |
-| Total parameters | ~135 million |
+| Intermediate size | 3072 |
+| Vocabulary size | 64,001 (`vocab_size` trong config.json; tokenizer thực tế 64,000) |
 | Max position embeddings | 258 |
+| Total parameters | 134,409,218 (~134.4M, gồm 2 linear head start/end) |
+| Trọng số FP32 | 537,660,792 bytes (537MB) |
+| Seed | 42 |
 
 ### 3.3 Fine-tuning Strategy
 
@@ -195,12 +203,13 @@ gradient_checkpointing = True # Save memory
 ## 4. Quá trình Huấn luyện
 
 ### 4.1 Environment
-- **Framework:** PyTorch 2.x + Hugging Face Transformers 4.x
-- **GPU:** [Điền loại GPU nếu có, ví dụ: NVIDIA GTX 1650 4GB]
-- **CPU:** [Nếu train trên CPU]
-- **RAM:** [Amount used]
-- **Training time:** [X hours/minutes]
-- **Storage:** Model size ~540MB
+- **Framework:** PyTorch + Hugging Face Transformers 4.57.1
+- **GPU:** NVIDIA GeForce RTX 3050 Laptop, 4GB VRAM
+- **Training time:** 3537.8 giây = **58 phút 58 giây** cho 6621 steps / 3 epochs
+  (29.94 samples/giây, 1.872 steps/giây) — nguồn `train_log.txt`
+- **Validation eval:** 30.8–31.5 giây cho 2872 câu (141–145 samples/giây)
+- **Storage:** trọng số FP32 537MB; bản FP16 khi load vào GPU chiếm ~269MB
+- **Suy luận web app:** 190–915 ms/câu (RTX 3050, FP16), tuỳ độ dài đoạn văn
 
 ### 4.2 Command chạy training
 ```bash
@@ -216,12 +225,23 @@ python src/train.py \
 ```
 
 ### 4.3 Training Logs
-[Chèn biểu đồ loss curves nếu có từ train_log.txt]
+Số thật từ `train_log.txt` (train loss = giá trị log gần nhất của epoch):
 
-Hoặc mô tả:
-- Training loss giảm đều qua các epochs
-- Validation loss ổn định, không overfitting
-- Best checkpoint saved at epoch [X]
+| Epoch | train_loss | eval_loss |
+|-------|------------|-----------|
+| 0.02 | 5.444 | – |
+| 1.00 | 1.342 | 1.3073 |
+| 1.99 | 0.963 | **1.2203** ← thấp nhất, `checkpoint-4414` |
+| 2.99 | 0.762 | 1.2667 (epoch 3.0) |
+| Trung bình cả run | 1.2231 | – |
+
+- Training loss giảm đều qua 3 epochs (5.44 → 0.76).
+- **Eval_loss chạm đáy ở epoch 2 rồi TĂNG ở epoch 3** → overfit nhẹ. Handler của Trainer
+  đã chọn `checkpoint-4414` (epoch 2) làm best, nhưng model được load để báo cáo là
+  `models/phobert_qa/` (epoch 3). Đây là một hạn chế đã biết: chưa đo lại test set với
+  weights epoch 2.
+- Vẽ biểu đồ: đọc `train_log.txt` rồi plot `loss` và `eval_loss` theo `epoch`
+  (đoạn code ở mục "Biểu đồ" phía dưới).
 
 ---
 
@@ -244,45 +264,67 @@ python src/evaluate.py \
     --test_file data/processed/test.parquet
 ```
 
-**Kết quả:**
+**Kết quả — toàn bộ test set, n = 2882 (model một tầng):**
 
 | Metric | Score |
 |--------|-------|
-| **Overall Exact Match (EM)** | [XX.XX]% |
-| **Overall F1 Score** | [XX.XX]% |
-| HasAns EM | [XX.XX]% |
-| HasAns F1 | [XX.XX]% |
-| NoAns Accuracy | [XX.XX]% |
+| **Overall Exact Match (EM)** | 42.40% |
+| **Overall F1 Score** | 57.90% |
+| HasAns EM | 47.57% |
+| HasAns F1 | 70.62% |
+| NoAns Accuracy | 31.78% |
+| F1 riêng trên 1729 câu model chịu trả lời | 79.16% |
 
-*Lưu ý: Thay thế [XX.XX] bằng số thực tế từ output của evaluate.py*
+**Kết quả — bật tầng reranker, τ = 0.95, mẫu 200 câu test (seed 42):**
+
+| Metric | Một tầng | Hai tầng | Δ |
+|--------|----------|----------|---|
+| EM toàn bộ | 41.50 | **46.00** | +4.50 |
+| F1 toàn bộ | 56.69 | **58.92** | +2.23 |
+| Độ chính xác câu bẫy | 34.85 | **56.06** | +21.21 |
+| F1 câu có đáp án | 67.45 | 60.33 | −7.12 |
+| Tỉ lệ bỏ trả lời | 22.0% | 35.5% | +13.50 |
+
+Chạy lại: `python src/batch_eval.py --n 200 --out batch_eval_n200.json`.
 
 ### 5.3 Phân tích kết quả
 
 **Điểm mạnh:**
-- Model học được pattern trích xuất thông tin cơ bản
-- Xử lý tốt các câu hỏi đơn giản, trực tiếp
-- Phát hiện tương đối tốt câu hỏi không có đáp án
+- F1 79.16 khi model chịu trả lời → model định vị đúng vùng chứa thông tin trong đoạn văn.
+- Sliding window 256/64 phủ được những đoạn văn dài tới 1537 từ bằng nhiều cửa sổ overlap.
+- Pool 40 ứng viên của reranker chứa đáp án đúng trong **92.8%** câu có đáp án (đo trên val).
 
 **Điểm yếu:**
-- Khó khăn với câu hỏi đòi hỏi suy luận phức tạp
-- Nhạy cảm với wording của câu hỏi
-- Context dài có thể làm giảm accuracy
+- Cắt biên đáp án chưa chuẩn.
+- Nói khi đáng ra phải im lặng: phần lớn câu bẫy vẫn bị gán đáp án.
+- Reranker không cải thiện được việc *chọn* span — chỉ cải thiện việc *từ chối*.
 
-**Error Analysis:**
-Các trường hợp sai phổ biến:
-1. Answer span quá dài/ngắn so với expected
-2. Không xử lý tốt negation (không, chưa, chẳng)
-3. Confusion khi có multiple entities cùng loại
+**Error Analysis** — 6 nhóm, tính từ `predictions.json` bằng `normalize_text / compute_exact /
+compute_f1` trong `src/evaluate.py`:
+
+| Nhóm lỗi | Câu | % test |
+|---|---|---|
+| Trả lời đúng (EM) | 922 | 32.0% |
+| Bỏ đúng câu bẫy | 300 | 10.4% |
+| **Đúng chỗ, cắt sai biên** (375 dài thừa + 233 dài thiếu) | **608** | **21.1%** |
+| **Bịa đáp án cho câu bẫy** | **644** | **22.3%** |
+| Từ chối oan câu có đáp án | 209 | 7.3% |
+| Sai span khác / sai hoàn toàn | 199 | 6.9% |
+
+Kết luận quan trọng nhất: model **không thiếu kiến thức**, nó mất điểm ở hai việc cụ thể là
+*biên đáp án* và *biết khi nào nên im lặng*. Đây là lý do tầng thứ hai được xây để chấm
+"độ tin không có đáp án" thay vì cố đoán giỏi hơn.
 
 ### 5.4 Predictions Sample
-File `predictions.json` chứa toàn bộ predictions trên test set.
+File `predictions.json` (id → đáp án, chuỗi rỗng = model từ chối) chứa toàn bộ 2882
+predictions; **509 câu (17.7%) model bỏ trống** — 300 trong số đó là câu bẫy trả lời đúng,
+209 là câu có đáp án bị bỏ lỡ.
 
-Ví dụ:
 ```json
 {
-  "qa_001": "Hà Nội",
-  "qa_002": "",
-  "qa_003": "sông Hồng"
+  "uit_000013": "thiếu tướng Quân đội Nhân dân Việt Nam, phó giám đốc Viện Khoa học và Công nghệ Quân sự",
+  "uit_000014": "Trung Quốc, Liên Xô",
+  "uit_000015": "nửa quên nửa nhớ"
 }
 ```
 
@@ -296,25 +338,20 @@ Ví dụ:
 - **Deployment:** Local (có thể deploy lên cloud)
 
 ### 6.2 Tính năng
-1. **Input Interface:**
-   - Text area cho context (đoạn văn)
-   - Text input cho question (câu hỏi)
-   - Responsive design
+1. **Tab "Hỏi đáp trên đoạn văn của bạn":**
+   - Text area cho context, text input cho question
+   - Highlight đáp án trong context + kỹ thuật chi tiết (số cửa sổ, số ứng viên) mở rộng được
+   - Độ tin cậy hiệu chuẩn và danh sách top phương án đã cân nhắc, mỗi phương án kèm điểm
+   - Thanh "Độ khắt khe" đổi ngưỡng từ chối τ (mặc định 0.95) ngay trên giao diện
 
 2. **Inference:**
-   - Real-time prediction (< 1 second)
-   - Sliding window cho context dài
-   - Unanswerable question detection
+   - 190–915 ms/câu trên RTX 3050 (FP16), phụ thuộc độ dài đoạn
+   - Sliding window 256/64 cho context dài (tới 1537 từ trong test set)
+   - Hai tầng: encoder PhoBERT sinh pool ứng viên → reranker chọn và quyết định im lặng
 
-3. **Output Display:**
-   - Highlight answer trong context
-   - Hiển thị confidence scores
-   - Technical details expandable
-
-4. **User Experience:**
-   - Clean, intuitive interface
-   - Helpful tooltips và examples
-   - Loading indicators
+3. **Tab "Đánh giá hàng loạt trên test set":**
+   - Chạy thật trên mẫu câu hỏi test (seed 42) bằng đúng pipeline Tab 1
+   - Bảng một tầng vs hai tầng + đường cong ngưỡng τ + kết luận từng câu, xuất được CSV
 
 ### 6.3 Demo Screenshots
 
@@ -357,7 +394,7 @@ Chi tiết: Xem `README_DEPLOYMENT.md`
 - **Giải pháp:** So sánh null score (CLS token) với best answer score, sử dụng threshold
 
 **4. Memory Constraints**
-- **Vấn đề:** Model lớn (~540MB), GPU memory limited
+- **Vấn đề:** Model lớn (537MB weights FP32), GPU memory limited
 - **Giải pháp:** 
   - FP16 mixed precision training
   - Gradient checkpointing
@@ -385,26 +422,29 @@ Chi tiết: Xem `README_DEPLOYMENT.md`
 
 ### 8.1 Những gì đã đạt được
 ✅ **Hoàn thành yêu cầu đề bài:**
-- Fine-tune Transformer-based model (PhoBERT) cho NLP task
-- Đạt kết quả khả quan trên ViQuAD dataset
-- Xây dựng web application hoàn chỉnh
+- Fine-tune Transformer-based model (PhoBERT-base, 134.4M tham số) trên ViQuAD
+- **EM 42.40 / F1 57.90** trên toàn bộ test set 2882 câu, kèm HasAns và NoAns tách riêng
+- Xây dựng web application hoàn chỉnh, có tab tự chấm điểm trên test set thật
 
 ✅ **Technical achievements:**
-- Implement OOP architecture cho training pipeline
-- Custom tokenization và offset mapping
-- Unanswerable question detection
-- Optimized training với FP16 và gradient checkpointing
+- OOP training pipeline, custom offset mapping cho BPE tiếng Việt
+- Tầng reranker + abstention có hiệu chuẩn: độ chính xác câu bẫy 34.85 → **56.06**
+  trên mẫu 200 câu (τ = 0.95)
+- đường cong đánh đổi EM/F1/câu bẫy theo ngưỡng τ đo được trên val, hiển thị trong app
+- Training với FP16 + gradient checkpointing trong 59 phút trên laptop GPU 4GB
 
-✅ **Documentation:**
-- Comprehensive guides (Quick Start → Deployment → Submission)
-- Clean, well-commented code
-- Test scripts và verification tools
+✅ **Bằng chứng phủ định (cũng là kết quả):**
+- Pool 40 ứng viên recall 92.8% nhưng reranker đặc trưng bề mặt chỉ sửa được **12/821** câu
+  xếp hạng sai → kết luận có số liệu: lỗi biên không sửa được bằng hậu xử lý, vì kiến trúc
+  pointer chấm start và end độc lập rồi cộng lại
 
 ### 8.2 Hạn chế
-- Chưa thử nghiệm với larger models (PhoBERT-large)
-- Evaluation chỉ trên 1 dataset
-- Web app chưa có authentication hay user management
-- Chưa optimize cho production deployment
+- **Reranker đổi F1 câu có đáp án lấy câu bẫy:** −7.12 điểm HasAns F1, tỉ lệ bỏ trả lời
+  tăng 22% → 35.5%. Hai cột phải đọc cùng nhau, không được trích một mình số EM +4.5.
+- Model báo cáo là weights epoch 3 (eval_loss 1.2667) trong khi early-stopping chọn epoch 2
+  (1.2203); chưa đo test set riêng cho weights epoch 2.
+- Chưa train thêm backbone nào khác (PhoBERT-large, XLM-R) nên không có so sánh ngoài.
+- Evaluation chỉ trên 1 dataset; web app chưa có authentication.
 
 ### 8.3 Hướng phát triển tương lai
 
@@ -510,13 +550,16 @@ plt.show()
 ```
 
 ### 2. Chèn bảng so sánh
-So sánh với baseline hoặc các models khác:
+Chỉ so những gì nhóm tự chạy trên cùng test set — không copy số từ paper khác:
 
-| Model | EM | F1 | Parameters |
-|-------|-----|-----|------------|
-| PhoBERT-base (ours) | XX.XX% | XX.XX% | 135M |
-| mBERT | XX.XX% | XX.XX% | 178M |
-| XLM-R | XX.XX% | XX.XX% | 279M |
+| Cấu hình | EM | F1 | Tham số |
+|----------|-----|-----|---------|
+| PhoBERT-base một tầng (toàn test, n=2882) | 42.40 | 57.90 | 134.4M |
+| + reranker, τ=0.95 (mẫu 200 câu, seed 42) | 46.00 | 58.92 | 134.4M + GBM |
+| Chính mẫu 200 câu, một tầng (để so công bằng) | 41.50 | 56.69 | 134.4M |
+
+Ghi chú cho báo cáo: mBERT/XLM-R/PhoBERT-large **không** được train trong project này, nên
+đừng đưa vào bảng — người chấm có thể yêu cầu chạy lại số liệu bất kỳ dòng nào ở trên.
 
 ### 3. Screenshots chất lượng cao
 - Chụp ở độ phân giải cao

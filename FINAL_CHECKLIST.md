@@ -1,5 +1,10 @@
 # ✅ Final Checklist - Post-Upgrade
 
+> ⚠️ **Trạng thái thực tế:** `app/app.py` hiện chỉ có **2 tab** — "📝 Hỏi đáp trên đoạn văn
+> của bạn" và "🧪 Đánh giá hàng loạt trên test set". Phần "Core Features Verification" bên
+> dưới kiểm tra các tab Attention/Explainability, Analytics và Conversation **đã bị bỏ**,
+> nên bỏ qua những mục đó. Checklist còn hiệu lực cho bản nộp là `CHECKLIST.md`.
+
 Sử dụng checklist này để đảm bảo mọi thứ sẵn sàng sau khi nâng cấp.
 
 ---

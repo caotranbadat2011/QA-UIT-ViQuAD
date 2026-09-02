@@ -54,7 +54,7 @@ http://localhost:8501
    Ai đã phát triển PhoBERT?
    ```
 
-3. **Nhấn "Trả lời"** → Kết quả: **"VinAI Research"**
+3. **Nhấn "Trả lời"** → Kết quả: **"VinAI Research"** (đã chạy thật, độ tin 0.985)
 
 ---
 
@@ -65,16 +65,23 @@ http://localhost:8501
 | Base Model | PhoBERT-base (VinAI) |
 | Task | Extractive Question Answering |
 | Dataset | ViQuAD |
-| Parameters | ~135M |
-| Max Sequence Length | 256 tokens |
+| Parameters | 134.4M encoder (134,409,218) |
+| Max Sequence Length | 256 tokens, stride 64 |
 | Supported Languages | Vietnamese |
+| EM / F1 toàn test set | 42.40 / 57.90 |
+| F1 câu có đáp án | 70.62 |
+| Độ chính xác câu bẫy | 31.78 (một tầng) · 56.06 (hai tầng, τ=0.95) |
+| Độ trễ | ~40–90 ms với context ngắn; 190–915 ms trên test set (RTX 3050 Laptop 4GB) |
+
+Số liệu đầy đủ: xem mục Results trong [README.md](README.md).
 
 ---
 
 ## ❓ FAQ
 
 **Q: Ứng dụng chạy chậm?**  
-A: Lần đầu load model sẽ mất 5-10 giây. Các lần sau sẽ nhanh hơn nhờ cache.
+A: Lần đầu load model (weights 537MB + reranker) mất khoảng 17–21 giây trên máy này. Sau khi
+app đã chạy thì mỗi câu chỉ mất ~40–230 ms; model được giữ trong RAM, không load lại.
 
 **Q: Có cần GPU không?**  
 A: Không bắt buộc. CPU vẫn chạy được nhưng chậm hơn. GPU khuyến nghị cho training.
@@ -83,7 +90,13 @@ A: Không bắt buộc. CPU vẫn chạy được nhưng chậm hơn. GPU khuy�
 A: ViQuAD - Vietnamese Question Answering Dataset, tương tự SQuAD nhưng cho tiếng Việt.
 
 **Q: Làm sao biết câu hỏi không có đáp án?**  
-A: Model có cơ chế phát hiện unanswerable questions. Nếu không tìm thấy đáp án phù hợp, hệ thống sẽ hiển thị cảnh báo.
+A: Tầng reranker cho mỗi phương án một điểm "không có đáp án". Hệ thống chỉ im lặng khi
+phương án đó thắng *và* đạt ngưỡng τ = 0.95, nên bao giờ cũng kèm độ tin cậy để bạn tự kiểm
+tra. Kéo thanh *Độ khắt khe* trong Tab 1 để đổi mức dám nói "không có đáp án".
+
+**Q: App báo không load được model?**  
+A: Trọng số 537MB không nằm trong git (xem `.gitignore`). Đặt `models/phobert_qa/`
+(kèm `model.safetensors`, `config.json`, tokenizer) vào đúng đường dẫn đó rồi chạy lại.
 
 ---
 

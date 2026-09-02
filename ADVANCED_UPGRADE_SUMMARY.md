@@ -189,22 +189,28 @@ for phase in ['easy', 'medium', 'hard']:
 
 ---
 
-## 📊 EXPECTED IMPACT
+## 📊 KẾT QUẢ THỰC TẾ
 
-### Performance Improvements:
-| Metric | Baseline | Advanced | Gain |
-|--------|----------|----------|------|
-| EM Score | ~65% | ~68-70% | **+3-5%** |
-| F1 Score | ~72% | ~75-77% | **+3-5%** |
-| NoAns Accuracy | ~60% | ~68-73% | **+8-13%** |
-| Robustness | Baseline | +3-5% | **Significant** |
+> ⚠️ **Các module trong tài liệu này chưa được train.** Multi-task head, curriculum
+> learning và data augmentation **có code nhưng không được chạy**, nên **không có số cải
+> thiện** nào để báo cáo. Bảng dưới chỉ giữ lại baseline đo thật trên test set (n=2882)
+> để làm mốc so sánh nếu ai đó chạy tiếp.
 
-### Qualitative Benefits:
-✅ Research-level methodology  
-✅ Sophisticated architecture design  
-✅ Demonstrates deep ML knowledge  
-✅ Impressive for grading committee  
-✅ Publication-quality implementation  
+| Metric | Baseline (đo thật, n=2882) | Sau các kỹ thuật này |
+|--------|---------------------------|----------------------|
+| EM Score | 42.40 | chưa train |
+| F1 Score | 57.90 | chưa train |
+| HasAns F1 | 70.62 | chưa train |
+| NoAns Accuracy | 31.78 | chưa train |
+
+Số duy nhất đã đo ở "tầng thứ hai" là reranker + ngưỡng từ chối (`src/reranker_features.py`,
+`src/qa_service.py`, `src/batch_eval.py`), trên mẫu 200 câu test: NoAns 34.85 → **56.06** nhưng HasAns F1
+**−7.12**, và reranker chỉ sửa được thứ tự **12/821** câu bị xếp hạng sai.
+
+### Đã xây dựng (code chạy được):
+✅ Pipeline đánh giá nâng cao theo 6 nhóm lỗi, tính lại được từ `predictions.json`  
+✅ Reranker span-level với pseudo-candidate `\x00NULL` và ngưỡng hiệu chuẩn  
+✅ Batch evaluation lab trong web app (đo hai tầng trên cùng một mẫu)  
 
 ---
 

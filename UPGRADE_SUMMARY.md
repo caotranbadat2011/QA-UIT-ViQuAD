@@ -1,5 +1,11 @@
 # 🎯 Project Upgrade Summary
 
+> ⚠️ **Trạng thái thực tế:** `app/app.py` hiện chỉ có **2 tab** — "📝 Hỏi đáp trên đoạn văn
+> của bạn" và "🧪 Đánh giá hàng loạt trên test set". Các tính năng mô tả trong file này
+> (Attention/Explainability, Analytics dashboard, Multi-Turn Conversation) **đã bị bỏ**, và
+> các con số hiệu năng ghi ở đây là **ước lượng chưa đo**. Số đo thật nằm trong `README.md`
+> (mục Results).
+
 ## Tổng quan nâng cấp
 
 Project đã được **nâng cấp đáng kể** với 4 tính năng độc đáo, biến từ một basic QA system thành một **advanced, production-ready demo** có thể đạt điểm 9-10.

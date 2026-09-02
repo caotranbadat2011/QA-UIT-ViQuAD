@@ -1,5 +1,10 @@
 # 🚀 Quick Guide: Testing New Features
 
+> ⚠️ **Trạng thái thực tế:** `app/app.py` hiện chỉ có **2 tab** — "📝 Hỏi đáp trên đoạn văn
+> của bạn" và "🧪 Đánh giá hàng loạt trên test set". Các tính năng mà guide này hướng dẫn
+> test **đã bị bỏ khỏi app**; các mục Inference Speed / Memory Usage bên dưới là
+> **ước lượng chưa đo**. Số đo thật nằm trong `README.md` (mục Results).
+
 Hướng dẫn nhanh để cài đặt và test các tính năng nâng cấp.
 
 ---
@@ -216,9 +221,10 @@ bad_cases[:10]  # Thay vì [:20]
 - Streamlit app: ~500MB overhead
 
 ### Accuracy:
-- Should match original evaluate.py results
-- EM: XX.XX% (từ evaluation logs)
-- F1: XX.XX% (từ evaluation logs)
+- Khớp với kết quả `src/evaluate.py` trên toàn test set (n=2882):
+  - EM: 42.40%
+  - F1: 57.90%
+  - HasAns EM/F1: 47.57% / 70.62%, NoAns Accuracy: 31.78%
 
 ---
 
