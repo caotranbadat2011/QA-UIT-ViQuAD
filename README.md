@@ -22,9 +22,10 @@ Hệ thống **Question Answering** sử dụng mô hình **PhoBERT** (Transform
 - 🌐 **Web Interface:** Giao diện web đẹp với Streamlit
 - ⚡ **Fast Inference:** Tối ưu với FP16 và GPU support
 
-> ⚠️ **Trọng số model không nằm trong git** (537MB, xem `.gitignore`). Trước khi chạy app,
-> đặt thư mục `models/phobert_qa/` (kèm `model.safetensors`) vào đúng đường dẫn đó — lấy từ
-> bản ZIP/Google Drive nộp bài. Reranker nhỏ (`models/reranker/`, 904KB) thì đã có trong repo.
+> ℹ️ **Trọng số model ở trong repo qua Git LFS** (`models/phobert_qa/model.safetensors`, 537MB).
+> `git clone` bình thường chỉ lấy về một pointer 134 byte, nên cần:
+> `git lfs install && git lfs pull` rồi mới chạy app. Checkpoint trung gian và `optimizer.pt`
+> (1.07GB mỗi file) **không** push — repo chỉ chứa model cuối cùng của epoch 3.
 
 ---
 
@@ -70,7 +71,7 @@ train_Vit/
 │   ├── batch_eval.py      # Chấm hàng loạt một tầng vs hai tầng, quét τ
 │   ├── api.py             # FastAPI mỏng trên QAService
 │   └── data_preprocessing.py
-├── models/phobert_qa/     # Encoder đã fine-tune (KHÔNG đẩy lên git)
+├── models/phobert_qa/     # Encoder đã fine-tune (537MB qua Git LFS)
 ├── models/reranker/       # reranker.pkl + meta.json (có trong git)
 ├── data/                  # Datasets
 ├── notebooks/             # Jupyter notebooks

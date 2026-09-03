@@ -68,7 +68,7 @@ train_Vit/
 ├── 🧠 MODEL
 │   └── models/phobert_qa/            # Trained PhoBERT QA model
 │       ├── config.json
-│       ├── model.safetensors         # Model weights (537MB, KHÔNG đẩy lên git)
+│       ├── model.safetensors         # Model weights (537MB, đẩy lên git qua Git LFS)
 │       ├── tokenizer_config.json
 │       ├── special_tokens_map.json
 │       ├── vocab.txt

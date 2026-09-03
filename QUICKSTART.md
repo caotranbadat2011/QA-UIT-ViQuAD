@@ -95,8 +95,14 @@ phương án đó thắng *và* đạt ngưỡng τ = 0.95, nên bao giờ cũng
 tra. Kéo thanh *Độ khắt khe* trong Tab 1 để đổi mức dám nói "không có đáp án".
 
 **Q: App báo không load được model?**  
-A: Trọng số 537MB không nằm trong git (xem `.gitignore`). Đặt `models/phobert_qa/`
-(kèm `model.safetensors`, `config.json`, tokenizer) vào đúng đường dẫn đó rồi chạy lại.
+A: Trọng số 537MB nằm trong repo nhưng qua **Git LFS**. Nếu `models/phobert_qa/model.safetensors`
+chỉ có 134 byte và mở ra thấy dòng `version https://git-lfs...`, tức là bạn chưa tải object LFS:
+```bash
+git lfs install
+git lfs pull
+```
+Checkpoint trung gian (`checkpoint-4414`, `checkpoint-6621`) cố ý không có trong repo — bản push
+chỉ chứa model cuối của epoch 3 cùng tokenizer.
 
 ---
 

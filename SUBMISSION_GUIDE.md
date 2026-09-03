@@ -336,8 +336,9 @@ Kèm theo: `src/api.py` — REST API dùng chung `QAService` với web app.
 - Huấn luyện lại trên chính pool 40 ứng viên đã có (`src/dump_candidates.py`) — chi phí
   ~13 phút/epoch trên RTX 3050, chỉ đáng làm nếu pilot với encoder đóng cho thấy span scorer
   thắng pointer.
-- Deploy cloud (Streamlit Cloud / Hugging Face Spaces) — cần nguồn trọng số 537MB riêng vì
-  git không chứa chúng.
+- Deploy cloud (Streamlit Cloud / Hugging Face Spaces) — trọng số đã ở repo qua Git LFS,
+  nhưng phải kiểm tra nền tảng free có tự tải object LFS và còn đủ dung lượng/RAM cho 537MB
+  trước khi dựa vào cách này.
 
 ---
 
