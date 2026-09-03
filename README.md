@@ -262,13 +262,6 @@ Core packages:
 
 - **[QUICKSTART.md](QUICKSTART.md)** - Hướng dẫn nhanh 3 bước
 - **[README_DEPLOYMENT.md](README_DEPLOYMENT.md)** - Hướng dẫn cài đặt và deploy chi tiết
-- **[SUBMISSION_GUIDE.md](SUBMISSION_GUIDE.md)** - Hướng dẫn đóng gói và nộp bài
-- **[PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)** - Tổng kết project
-- **[CREATE_REPORT.md](CREATE_REPORT.md)** - Khung báo cáo chi tiết (số liệu đã điền)
-
-Một số tài liệu khác trong repo (`ADVANCED_*.md`, `UPGRADE_*.md`, `DEMO_FEATURES.md`,
-`CHECKLIST.md`) là ghi chú quá trình thử nghiệm, **không** mô tả kết quả cuối cùng — số liệu
-chính thức nằm ở mục Results của README và trong `batch_eval_n200.json` / `error_analysis.json`.
 
 ---
 
@@ -288,8 +281,6 @@ Kiểm tra:
 ---
 
 ## 📝 Report Template
-
-Template báo cáo chi tiết có sẵn trong [SUBMISSION_GUIDE.md](SUBMISSION_GUIDE.md).
 
 Cấu trúc báo cáo:
 1. Giới thiệu task

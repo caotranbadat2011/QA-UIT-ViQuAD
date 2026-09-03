@@ -250,6 +250,4 @@ Chi tiết predictions một tầng được lưu trong file `predictions.json`.
 
 Nếu có thắc mắc hoặc góp ý, vui lòng liên hệ nhóm phát triển.
 
----
-
-**Chúc bạn sử dụng ứng dụng thành công! 🎉**
+--- 

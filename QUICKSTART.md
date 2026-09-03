@@ -113,5 +113,3 @@ chỉ chứa model cuối của epoch 3 cùng tokenizer.
 - [Streamlit Documentation](https://docs.streamlit.io)
 
 ---
-
-**Enjoy! 🎉**
