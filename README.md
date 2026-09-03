@@ -318,7 +318,8 @@ Cấu trúc báo cáo:
 
 **Final Project - Transformer-Based NLP Application**
 
-Student IDs: Replace with your actual student IDs
+- **Cao Trần Bá Đạt** - 23127168
+- **Trần Danh Thiện** - 23127120
 
 ---
 
