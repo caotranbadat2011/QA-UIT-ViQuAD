@@ -3,3 +3,8 @@
 *.safetensors filter=lfs diff=lfs merge=lfs -text
 *.parquet filter=lfs diff=lfs merge=lfs -text
 *.model filter=lfs diff=lfs merge=lfs -text
+
+# Tokenizer assets phai gi nguyen tung byte: core.autocrlf="true" tren Windows
+# doi LF->CRLF khi checkout va co the lam hong vocab/bpe cua PhoBERT.
+models/**/*.txt binary
+models/**/*.codes binary

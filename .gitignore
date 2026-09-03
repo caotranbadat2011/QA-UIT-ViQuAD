@@ -57,9 +57,10 @@ hub/
 # Model checkpoints (keep only best model, remove intermediate checkpoints)
 models/*/checkpoint-*/
 
-# Trong so model: 537MB weights cua PhoBERT khong day len GitHub.
-# Nguoi dung tai ve tu Google Drive/ZIP kem bao cao roi dat vao duong dan nay.
-models/phobert_qa/
+# Trong so model: 537MB weights cua PhoBERT di qua Git LFS (.gitattributes).
+# Checkpoint trung gian van bi ignore (rule models/*/checkpoint-*/ va *.pt o tren),
+# chi model cuoi cung + tokenizer du day len.
+# models/phobert_qa/
 
 # Pool 40 ung vien moi cau (428MB) — sinh ra boi dump_candidates.py, chi can
 # tai tao khi train lai reranker.
