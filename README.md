@@ -341,9 +341,3 @@ PhoBERT model by VinAI Research.
 ---
 
 <div align="center">
-
-**Made with ❤️ for Vietnamese NLP**
-
-[Report Bug](../../issues) · [Request Feature](../../issues)
-
-</div>
