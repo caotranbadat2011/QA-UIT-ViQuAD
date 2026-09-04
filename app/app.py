@@ -71,7 +71,6 @@ def answer_question(question, context, tokenizer, model, max_length=384):
         return None, best_score, null_score
     return best_answer, best_score, null_score
 
-
 st.title("🔎 Vietnamese Question Answering")
 st.caption("Extractive QA fine-tuned on ViQuAD (with unanswerable question detection)")
 
