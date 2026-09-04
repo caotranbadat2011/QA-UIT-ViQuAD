@@ -196,7 +196,6 @@ def parse_args():
     parser.add_argument("--learning_rate", type=float, default=3e-5)
     return parser.parse_args()
 
-
 if __name__ == "__main__":
     args = parse_args()
     pipeline = QATrainerPipeline(args)
